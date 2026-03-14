@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:bmi_calculator/core/constants/bmi_tips.dart';
 import 'package:bmi_calculator/core/utils/bmi_calculator.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
 
@@ -198,6 +199,7 @@ class _StyledResultContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final categoryColor = _categoryColor(colorScheme);
     final description = _descriptionForCategory(result.category);
+    final tips = BmiTips.getTipsForCategory(result.category);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -244,6 +246,48 @@ class _StyledResultContent extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
+        if (tips.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Tips',
+            style: textTheme?.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...tips.map(
+            (tip) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: categoryColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      tip,
+                      style: textTheme?.bodySmall?.copyWith(
+                        color: colorScheme.onSurface,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
