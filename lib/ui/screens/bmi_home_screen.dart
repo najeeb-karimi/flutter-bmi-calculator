@@ -17,9 +17,12 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   static const double _maxHeightCm = 220;
   static const double _minWeightKg = 30;
   static const double _maxWeightKg = 150;
+  static const double _minTargetBmi = 18;
+  static const double _maxTargetBmi = 28;
 
   double _heightCm = 170;
   double _weightKg = 70;
+  double _targetBmi = 22;
   BmiResult? _result;
 
   void _onCalculate() {
@@ -125,6 +128,20 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
               divisions: (_maxWeightKg - _minWeightKg).round(),
               onChanged: (v) => setState(() => _weightKg = v),
             ),
+            const SizedBox(height: 16),
+            Text(
+              'Target BMI: ${_targetBmi.toStringAsFixed(1)}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            Slider(
+              value: _targetBmi,
+              min: _minTargetBmi,
+              max: _maxTargetBmi,
+              divisions: ((_maxTargetBmi - _minTargetBmi) * 2).round(),
+              onChanged: (v) => setState(() => _targetBmi = v),
+            ),
           ],
         ),
       ),
@@ -167,6 +184,9 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                   ? _StyledResultContent(
                       key: ValueKey<double>(_result!.value),
                       result: _result!,
+                      heightCm: _heightCm,
+                      weightKg: _weightKg,
+                      targetBmi: _targetBmi,
                       colorScheme: colorScheme,
                       textTheme: theme.textTheme,
                     )
@@ -187,19 +207,49 @@ class _StyledResultContent extends StatelessWidget {
   const _StyledResultContent({
     required super.key,
     required this.result,
+    required this.heightCm,
+    required this.weightKg,
+    required this.targetBmi,
     required this.colorScheme,
     required this.textTheme,
   });
 
   final BmiResult result;
+  final double heightCm;
+  final double weightKg;
+  final double targetBmi;
   final ColorScheme colorScheme;
   final TextTheme? textTheme;
+
+  /// Target weight in kg for [targetBmi] at [heightCm]. Formula: targetBmi * (heightM)^2.
+  static double _targetWeightKg(double targetBmi, double heightCm) {
+    if (heightCm <= 0) return 0;
+    final heightM = heightCm / 100;
+    return targetBmi * (heightM * heightM);
+  }
+
+  /// Short guidance string: how far current weight is from target weight for the given target BMI.
+  static String _targetGuidance(
+      double weightKg, double heightCm, double targetBmi) {
+    final targetW = _targetWeightKg(targetBmi, heightCm);
+    final diffKg = weightKg - targetW;
+    if (diffKg.abs() < 1) {
+      return 'You\'re at your target weight for BMI ${targetBmi.toStringAsFixed(1)}.';
+    }
+    final absKg = diffKg.abs().toStringAsFixed(1);
+    if (diffKg > 0) {
+      return 'To reach a BMI of ${targetBmi.toStringAsFixed(1)}, aim to lose about $absKg kg.';
+    } else {
+      return 'To reach a BMI of ${targetBmi.toStringAsFixed(1)}, aim to gain about $absKg kg.';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final categoryColor = _categoryColor(colorScheme);
     final description = _descriptionForCategory(result.category);
     final tips = BmiTips.getTipsForCategory(result.category);
+    final targetGuidance = _targetGuidance(weightKg, heightCm, targetBmi);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -288,6 +338,29 @@ class _StyledResultContent extends StatelessWidget {
             ),
           ),
         ],
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.flag_outlined, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  targetGuidance,
+                  style: textTheme?.bodySmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
