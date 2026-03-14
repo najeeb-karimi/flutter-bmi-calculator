@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:bmi_calculator/core/theme/app_theme.dart';
+import 'package:bmi_calculator/ui/screens/bmi_home_screen.dart';
 
 void main() {
   runApp(const BmiCalculatorApp());
@@ -16,8 +17,7 @@ class BmiCalculatorApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      home:
-          const Placeholder(), // Will be replaced with BMI home screen in later phases.
+      home: const BmiHomeScreen(),
     );
   }
 }
