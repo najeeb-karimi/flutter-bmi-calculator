@@ -36,8 +36,15 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   }
 
   void _onCalculate() {
+    final isMetric = _unit == MeasurementUnit.metric;
+    final displayHeight = isMetric ? _heightCm : UnitConverter.cmToIn(_heightCm);
+    final displayWeight = isMetric ? _weightKg : UnitConverter.kgToLb(_weightKg);
     setState(() {
-      _result = BmiCalculator.compute(_weightKg, _heightCm);
+      _result = BmiCalculator.computeWithUnit(
+        weight: displayWeight,
+        height: displayHeight,
+        unit: _unit,
+      );
     });
   }
 
