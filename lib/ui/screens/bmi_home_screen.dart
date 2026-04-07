@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:bmi_calculator/core/constants/bmi_tips.dart';
 import 'package:bmi_calculator/core/utils/bmi_calculator.dart';
+import 'package:bmi_calculator/core/utils/unit_converter.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
+import 'package:bmi_calculator/models/measurement_unit.dart';
 
 /// Main BMI calculator screen with header, input area, and result area.
 class BmiHomeScreen extends StatefulWidget {
@@ -20,10 +22,18 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   static const double _minTargetBmi = 18;
   static const double _maxTargetBmi = 28;
 
+  MeasurementUnit _unit = MeasurementUnit.metric;
   double _heightCm = 170;
   double _weightKg = 70;
   double _targetBmi = 22;
   BmiResult? _result;
+
+  void _onUnitChanged(MeasurementUnit newUnit) {
+    if (_unit == newUnit) return;
+    setState(() {
+      _unit = newUnit;
+    });
+  }
 
   void _onCalculate() {
     setState(() {
@@ -88,12 +98,39 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
 
   Widget _buildInputCard(BuildContext context) {
     final theme = Theme.of(context);
+    final isMetric = _unit == MeasurementUnit.metric;
+    final heightValue = isMetric ? _heightCm : UnitConverter.cmToIn(_heightCm);
+    final weightValue = isMetric ? _weightKg : UnitConverter.kgToLb(_weightKg);
+    final minHeight = isMetric ? _minHeightCm : UnitConverter.cmToIn(_minHeightCm);
+    final maxHeight = isMetric ? _maxHeightCm : UnitConverter.cmToIn(_maxHeightCm);
+    final minWeight = isMetric ? _minWeightKg : UnitConverter.kgToLb(_minWeightKg);
+    final maxWeight = isMetric ? _maxWeightKg : UnitConverter.kgToLb(_maxWeightKg);
+    final heightUnit = isMetric ? 'cm' : 'in';
+    final weightUnit = isMetric ? 'kg' : 'lb';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SegmentedButton<MeasurementUnit>(
+              segments: const [
+                ButtonSegment<MeasurementUnit>(
+                  value: MeasurementUnit.metric,
+                  label: Text('Metric'),
+                ),
+                ButtonSegment<MeasurementUnit>(
+                  value: MeasurementUnit.imperial,
+                  label: Text('Imperial'),
+                ),
+              ],
+              selected: <MeasurementUnit>{_unit},
+              onSelectionChanged: (selection) {
+                _onUnitChanged(selection.first);
+              },
+            ),
+            const SizedBox(height: 16),
             Text(
               'Height & Weight',
               style: theme.textTheme.titleMedium?.copyWith(
@@ -102,31 +139,35 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Height: ${_heightCm.round()} cm',
+              'Height: ${heightValue.toStringAsFixed(1)} $heightUnit',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),
             ),
             Slider(
-              value: _heightCm,
-              min: _minHeightCm,
-              max: _maxHeightCm,
-              divisions: (_maxHeightCm - _minHeightCm).round(),
-              onChanged: (v) => setState(() => _heightCm = v),
+              value: heightValue.clamp(minHeight, maxHeight),
+              min: minHeight,
+              max: maxHeight,
+              divisions: (maxHeight - minHeight).round(),
+              onChanged: (v) => setState(() {
+                _heightCm = isMetric ? v : UnitConverter.inToCm(v);
+              }),
             ),
             const SizedBox(height: 8),
             Text(
-              'Weight: ${_weightKg.round()} kg',
+              'Weight: ${weightValue.toStringAsFixed(1)} $weightUnit',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),
             ),
             Slider(
-              value: _weightKg,
-              min: _minWeightKg,
-              max: _maxWeightKg,
-              divisions: (_maxWeightKg - _minWeightKg).round(),
-              onChanged: (v) => setState(() => _weightKg = v),
+              value: weightValue.clamp(minWeight, maxWeight),
+              min: minWeight,
+              max: maxWeight,
+              divisions: (maxWeight - minWeight).round(),
+              onChanged: (v) => setState(() {
+                _weightKg = isMetric ? v : UnitConverter.lbToKg(v);
+              }),
             ),
             const SizedBox(height: 16),
             Text(
