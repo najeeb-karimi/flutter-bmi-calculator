@@ -1,4 +1,6 @@
 import 'package:bmi_calculator/models/bmi_result.dart';
+import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/core/utils/unit_converter.dart';
 
 /// BMI calculation and category mapping (metric: kg and cm).
 class BmiCalculator {
@@ -27,5 +29,26 @@ class BmiCalculator {
     final value = calculateBmiKgM(weightKg, heightCm);
     final category = getCategory(value);
     return BmiResult(value: value, category: category);
+  }
+
+  /// Computes BMI from either metric or imperial input values.
+  ///
+  /// - Metric: [weight] in kg, [height] in cm
+  /// - Imperial: [weight] in lb, [height] in inches
+  ///
+  /// Internally, values are converted to metric before calculation.
+  static BmiResult computeWithUnit({
+    required double weight,
+    required double height,
+    required MeasurementUnit unit,
+  }) {
+    switch (unit) {
+      case MeasurementUnit.metric:
+        return compute(weight, height);
+      case MeasurementUnit.imperial:
+        final weightKg = UnitConverter.lbToKg(weight);
+        final heightCm = UnitConverter.inToCm(height);
+        return compute(weightKg, heightCm);
+    }
   }
 }
