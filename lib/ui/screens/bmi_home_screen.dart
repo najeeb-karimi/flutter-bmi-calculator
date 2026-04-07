@@ -5,6 +5,7 @@ import 'package:bmi_calculator/core/utils/bmi_calculator.dart';
 import 'package:bmi_calculator/core/utils/unit_converter.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/ui/screens/settings_screen.dart';
 
 /// Main BMI calculator screen with header, input area, and result area.
 class BmiHomeScreen extends StatefulWidget {
@@ -37,8 +38,10 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
 
   void _onCalculate() {
     final isMetric = _unit == MeasurementUnit.metric;
-    final displayHeight = isMetric ? _heightCm : UnitConverter.cmToIn(_heightCm);
-    final displayWeight = isMetric ? _weightKg : UnitConverter.kgToLb(_weightKg);
+    final displayHeight =
+        isMetric ? _heightCm : UnitConverter.cmToIn(_heightCm);
+    final displayWeight =
+        isMetric ? _weightKg : UnitConverter.kgToLb(_weightKg);
     setState(() {
       _result = BmiCalculator.computeWithUnit(
         weight: displayWeight,
@@ -56,6 +59,19 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('BMI Calculator'),
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SettingsScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -108,10 +124,14 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     final isMetric = _unit == MeasurementUnit.metric;
     final heightValue = isMetric ? _heightCm : UnitConverter.cmToIn(_heightCm);
     final weightValue = isMetric ? _weightKg : UnitConverter.kgToLb(_weightKg);
-    final minHeight = isMetric ? _minHeightCm : UnitConverter.cmToIn(_minHeightCm);
-    final maxHeight = isMetric ? _maxHeightCm : UnitConverter.cmToIn(_maxHeightCm);
-    final minWeight = isMetric ? _minWeightKg : UnitConverter.kgToLb(_minWeightKg);
-    final maxWeight = isMetric ? _maxWeightKg : UnitConverter.kgToLb(_maxWeightKg);
+    final minHeight =
+        isMetric ? _minHeightCm : UnitConverter.cmToIn(_minHeightCm);
+    final maxHeight =
+        isMetric ? _maxHeightCm : UnitConverter.cmToIn(_maxHeightCm);
+    final minWeight =
+        isMetric ? _minWeightKg : UnitConverter.kgToLb(_minWeightKg);
+    final maxWeight =
+        isMetric ? _maxWeightKg : UnitConverter.kgToLb(_maxWeightKg);
     final heightUnit = isMetric ? 'cm' : 'in';
     final weightUnit = isMetric ? 'kg' : 'lb';
 
