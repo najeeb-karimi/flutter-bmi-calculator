@@ -12,15 +12,19 @@ class BmiHomeScreen extends StatefulWidget {
   const BmiHomeScreen({
     super.key,
     required this.defaultUnit,
+    required this.initialTargetBmi,
     required this.currentThemeMode,
     required this.onDefaultUnitChanged,
     required this.onThemeModeChanged,
+    required this.onTargetBmiChanged,
   });
 
   final MeasurementUnit defaultUnit;
+  final double initialTargetBmi;
   final ThemeMode currentThemeMode;
   final ValueChanged<MeasurementUnit> onDefaultUnitChanged;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<double> onTargetBmiChanged;
 
   @override
   State<BmiHomeScreen> createState() => _BmiHomeScreenState();
@@ -37,13 +41,14 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   late MeasurementUnit _unit;
   double _heightCm = 170;
   double _weightKg = 70;
-  double _targetBmi = 22;
+  late double _targetBmi;
   BmiResult? _result;
 
   @override
   void initState() {
     super.initState();
     _unit = widget.defaultUnit;
+    _targetBmi = widget.initialTargetBmi;
   }
 
   @override
@@ -51,6 +56,9 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.defaultUnit != widget.defaultUnit) {
       _unit = widget.defaultUnit;
+    }
+    if (oldWidget.initialTargetBmi != widget.initialTargetBmi) {
+      _targetBmi = widget.initialTargetBmi;
     }
   }
 
@@ -246,7 +254,12 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
               min: _minTargetBmi,
               max: _maxTargetBmi,
               divisions: ((_maxTargetBmi - _minTargetBmi) * 2).round(),
-              onChanged: (v) => setState(() => _targetBmi = v),
+              onChanged: (v) {
+                setState(() {
+                  _targetBmi = v;
+                });
+                widget.onTargetBmiChanged(v);
+              },
             ),
           ],
         ),
