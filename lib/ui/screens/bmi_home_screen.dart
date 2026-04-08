@@ -144,7 +144,8 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
           duration: const Duration(milliseconds: 900),
           curve: Curves.easeInOut,
           builder: (context, value, child) {
-            final topColor = Color.lerp(colorScheme.surface, animatedTop, value)!;
+            final topColor =
+                Color.lerp(colorScheme.surface, animatedTop, value)!;
             final bottomColor = Color.lerp(
               colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               animatedBottom,
@@ -186,7 +187,7 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                           _buildCalculateButton(context),
                           const SizedBox(height: 20),
                           AnimatedScale(
-                            scale: _result == null ? 0.98 : 1.0,
+                            scale: _result == null ? 0.95 : 1.0,
                             duration: const Duration(milliseconds: 260),
                             curve: Curves.easeOutBack,
                             child: _buildResultCard(context),
@@ -343,7 +344,7 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
       onTapCancel: () => _setCalculatePressed(false),
       onTapUp: (_) => _setCalculatePressed(false),
       child: AnimatedScale(
-        scale: _isCalculatePressed ? 0.98 : 1,
+        scale: _isCalculatePressed ? 0.95 : 1,
         duration: const Duration(milliseconds: 140),
         curve: Curves.easeOut,
         child: FilledButton.icon(
