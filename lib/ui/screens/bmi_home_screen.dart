@@ -272,14 +272,28 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SegmentedButton<MeasurementUnit>(
+              style: ButtonStyle(
+                tapTargetSize: MaterialTapTargetSize.padded,
+                visualDensity: VisualDensity.standard,
+              ),
               segments: const [
                 ButtonSegment<MeasurementUnit>(
                   value: MeasurementUnit.metric,
-                  label: Text('Metric'),
+                  label: Text(
+                    'Metric',
+                    softWrap: false,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                  ),
                 ),
                 ButtonSegment<MeasurementUnit>(
                   value: MeasurementUnit.imperial,
-                  label: Text('Imperial'),
+                  label: Text(
+                    'Imperial',
+                    softWrap: false,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                  ),
                 ),
               ],
               selected: <MeasurementUnit>{_unit},
