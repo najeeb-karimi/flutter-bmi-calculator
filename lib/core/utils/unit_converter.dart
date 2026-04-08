@@ -13,4 +13,3 @@ class UnitConverter {
 
   static double inToCm(double inches) => inches / _cmToIn;
 }
-

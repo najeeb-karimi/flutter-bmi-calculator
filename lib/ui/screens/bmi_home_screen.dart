@@ -152,67 +152,64 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
           ),
         ],
       ),
-      body: Container(
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 900),
-          curve: Curves.easeInOut,
-          builder: (context, value, child) {
-            final topColor =
-                Color.lerp(colorScheme.surface, animatedTop, value)!;
-            final bottomColor = Color.lerp(
-              colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              animatedBottom,
-              value,
-            )!;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 700),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [topColor, bottomColor],
-                ),
+      body: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 900),
+        curve: Curves.easeInOut,
+        builder: (context, value, child) {
+          final topColor = Color.lerp(colorScheme.surface, animatedTop, value)!;
+          final bottomColor = Color.lerp(
+            colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            animatedBottom,
+            value,
+          )!;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [topColor, bottomColor],
               ),
-              child: child,
-            );
-          },
-          child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final horizontalPadding =
-                    constraints.maxWidth >= 700 ? 28.0 : 20.0;
-                return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: 20,
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildHeader(context),
-                          const SizedBox(height: 20),
-                          _buildInputCard(context),
-                          const SizedBox(height: 20),
-                          _buildCalculateButton(context),
-                          const SizedBox(height: 20),
-                          AnimatedScale(
-                            scale: _result == null ? 0.95 : 1.0,
-                            duration: const Duration(milliseconds: 260),
-                            curve: Curves.easeOutBack,
-                            child: _buildResultCard(context),
-                          ),
-                        ],
-                      ),
+            ),
+            child: child,
+          );
+        },
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final horizontalPadding =
+                  constraints.maxWidth >= 700 ? 28.0 : 20.0;
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: 20,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeader(context),
+                        const SizedBox(height: 20),
+                        _buildInputCard(context),
+                        const SizedBox(height: 20),
+                        _buildCalculateButton(context),
+                        const SizedBox(height: 20),
+                        AnimatedScale(
+                          scale: _result == null ? 0.95 : 1.0,
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOutBack,
+                          child: _buildResultCard(context),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
