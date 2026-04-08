@@ -14,4 +14,3 @@ extension MeasurementUnitLabel on MeasurementUnit {
     }
   }
 }
-
