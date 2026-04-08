@@ -605,15 +605,17 @@ class _StyledResultContent extends StatelessWidget {
   }
 
   Color _categoryColor(ColorScheme scheme) {
+    final isDark = scheme.brightness == Brightness.dark;
+
     switch (result.category) {
       case BmiCategory.underweight:
-        return scheme.tertiary;
+        return isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7);
       case BmiCategory.normal:
-        return scheme.primary;
+        return isDark ? const Color(0xFF86EFAC) : const Color(0xFF16A34A);
       case BmiCategory.overweight:
-        return scheme.secondary;
+        return isDark ? const Color(0xFFFCD34D) : const Color(0xFFD97706);
       case BmiCategory.obese:
-        return scheme.error;
+        return isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626);
     }
   }
 
