@@ -271,35 +271,41 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SegmentedButton<MeasurementUnit>(
-              style: ButtonStyle(
-                tapTargetSize: MaterialTapTargetSize.padded,
-                visualDensity: VisualDensity.standard,
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<MeasurementUnit>(
+                showSelectedIcon: true,
+                style: ButtonStyle(
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  visualDensity: VisualDensity.standard,
+                  minimumSize: const WidgetStatePropertyAll<Size>(Size(0, 44)),
+                  padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+                    EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+                segments: const [
+                  ButtonSegment<MeasurementUnit>(
+                    value: MeasurementUnit.metric,
+                    label: Text(
+                      'Metric',
+                      softWrap: false,
+                      maxLines: 1,
+                    ),
+                  ),
+                  ButtonSegment<MeasurementUnit>(
+                    value: MeasurementUnit.imperial,
+                    label: Text(
+                      'Imperial',
+                      softWrap: false,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+                selected: <MeasurementUnit>{_unit},
+                onSelectionChanged: (selection) {
+                  _onUnitChanged(selection.first);
+                },
               ),
-              segments: const [
-                ButtonSegment<MeasurementUnit>(
-                  value: MeasurementUnit.metric,
-                  label: Text(
-                    'Metric',
-                    softWrap: false,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                  ),
-                ),
-                ButtonSegment<MeasurementUnit>(
-                  value: MeasurementUnit.imperial,
-                  label: Text(
-                    'Imperial',
-                    softWrap: false,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                  ),
-                ),
-              ],
-              selected: <MeasurementUnit>{_unit},
-              onSelectionChanged: (selection) {
-                _onUnitChanged(selection.first);
-              },
             ),
             const SizedBox(height: 20),
             _buildSectionLabel(context, 'Height & Weight'),
