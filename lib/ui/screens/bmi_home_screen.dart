@@ -43,6 +43,7 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   double _weightKg = 70;
   late double _targetBmi;
   BmiResult? _result;
+  bool _isCalculatePressed = false;
 
   @override
   void initState() {
@@ -85,10 +86,28 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     });
   }
 
+  void _setCalculatePressed(bool value) {
+    if (_isCalculatePressed == value) return;
+    setState(() {
+      _isCalculatePressed = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final pulse = (DateTime.now().millisecond / 1000);
+    final animatedTop = Color.lerp(
+      colorScheme.surface,
+      colorScheme.primary.withValues(alpha: 0.08),
+      pulse,
+    )!;
+    final animatedBottom = Color.lerp(
+      colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+      colorScheme.surfaceContainerHighest.withValues(alpha: 0.38),
+      pulse,
+    )!;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,44 +139,65 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              colorScheme.surface,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeInOut,
+          builder: (context, value, child) {
+            final topColor = Color.lerp(colorScheme.surface, animatedTop, value)!;
+            final bottomColor = Color.lerp(
               colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final horizontalPadding = constraints.maxWidth >= 700 ? 28.0 : 20.0;
-              return SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: 20,
+              animatedBottom,
+              value,
+            )!;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [topColor, bottomColor],
                 ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildHeader(context),
-                        const SizedBox(height: 20),
-                        _buildInputCard(context),
-                        const SizedBox(height: 20),
-                        _buildCalculateButton(context),
-                        const SizedBox(height: 20),
-                        _buildResultCard(context),
-                      ],
+              ),
+              child: child,
+            );
+          },
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final horizontalPadding =
+                    constraints.maxWidth >= 700 ? 28.0 : 20.0;
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: 20,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildHeader(context),
+                          const SizedBox(height: 20),
+                          _buildInputCard(context),
+                          const SizedBox(height: 20),
+                          _buildCalculateButton(context),
+                          const SizedBox(height: 20),
+                          AnimatedScale(
+                            scale: _result == null ? 0.98 : 1.0,
+                            duration: const Duration(milliseconds: 260),
+                            curve: Curves.easeOutBack,
+                            child: _buildResultCard(context),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -298,12 +338,22 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   }
 
   Widget _buildCalculateButton(BuildContext context) {
-    return FilledButton.icon(
-      onPressed: _onCalculate,
-      icon: const Icon(Icons.monitor_weight_outlined),
-      label: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: Text('Calculate BMI'),
+    return GestureDetector(
+      onTapDown: (_) => _setCalculatePressed(true),
+      onTapCancel: () => _setCalculatePressed(false),
+      onTapUp: (_) => _setCalculatePressed(false),
+      child: AnimatedScale(
+        scale: _isCalculatePressed ? 0.98 : 1,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        child: FilledButton.icon(
+          onPressed: _onCalculate,
+          icon: const Icon(Icons.monitor_weight_outlined),
+          label: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('Calculate BMI'),
+          ),
+        ),
       ),
     );
   }
