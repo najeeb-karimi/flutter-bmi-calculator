@@ -131,37 +131,69 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(context),
-                const SizedBox(height: 24),
-                _buildInputCard(context),
-                const SizedBox(height: 24),
-                _buildCalculateButton(context),
-                const SizedBox(height: 24),
-                _buildResultCard(context),
-              ],
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final horizontalPadding = constraints.maxWidth >= 700 ? 28.0 : 20.0;
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: 20,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeader(context),
+                        const SizedBox(height: 20),
+                        _buildInputCard(context),
+                        const SizedBox(height: 20),
+                        _buildCalculateButton(context),
+                        const SizedBox(height: 20),
+                        _buildResultCard(context),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
   }
 
+  Widget _buildSectionLabel(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Text(
-        'Check your body mass index',
-        style: theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: theme.colorScheme.onSurface,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Check your body mass index',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Text(
+          'Use your height and weight to calculate your BMI and review tips tailored to your result.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.4,
+          ),
+        ),
+      ],
     );
   }
 
@@ -183,7 +215,7 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -203,18 +235,14 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                 _onUnitChanged(selection.first);
               },
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Height & Weight',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            const SizedBox(height: 20),
+            _buildSectionLabel(context, 'Height & Weight'),
             const SizedBox(height: 20),
             Text(
               'Height: ${heightValue.toStringAsFixed(1)} $heightUnit',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Slider(
@@ -226,11 +254,12 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                 _heightCm = isMetric ? v : UnitConverter.inToCm(v);
               }),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               'Weight: ${weightValue.toStringAsFixed(1)} $weightUnit',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Slider(
@@ -242,11 +271,12 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                 _weightKg = isMetric ? v : UnitConverter.lbToKg(v);
               }),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             Text(
               'Target BMI: ${_targetBmi.toStringAsFixed(1)}',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Slider(
@@ -268,10 +298,11 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   }
 
   Widget _buildCalculateButton(BuildContext context) {
-    return FilledButton(
+    return FilledButton.icon(
       onPressed: _onCalculate,
-      child: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
+      icon: const Icon(Icons.monitor_weight_outlined),
+      label: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
         child: Text('Calculate BMI'),
       ),
     );
@@ -283,17 +314,12 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Your Result',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 20),
+            _buildSectionLabel(context, 'Your Result'),
+            const SizedBox(height: 18),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               transitionBuilder: (Widget child, Animation<double> animation) {
