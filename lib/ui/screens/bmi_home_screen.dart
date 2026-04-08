@@ -45,11 +45,15 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   BmiResult? _result;
   bool _isCalculatePressed = false;
 
+  double _clampTargetBmi(double value) {
+    return value.clamp(_minTargetBmi, _maxTargetBmi);
+  }
+
   @override
   void initState() {
     super.initState();
     _unit = widget.defaultUnit;
-    _targetBmi = widget.initialTargetBmi;
+    _targetBmi = _clampTargetBmi(widget.initialTargetBmi);
   }
 
   @override
@@ -59,7 +63,7 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
       _unit = widget.defaultUnit;
     }
     if (oldWidget.initialTargetBmi != widget.initialTargetBmi) {
-      _targetBmi = widget.initialTargetBmi;
+      _targetBmi = _clampTargetBmi(widget.initialTargetBmi);
     }
   }
 
@@ -77,6 +81,16 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
         isMetric ? _heightCm : UnitConverter.cmToIn(_heightCm);
     final displayWeight =
         isMetric ? _weightKg : UnitConverter.kgToLb(_weightKg);
+
+    if (!displayHeight.isFinite || !displayWeight.isFinite) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid values detected. Please adjust your inputs.'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _result = BmiCalculator.computeWithUnit(
         weight: displayWeight,
@@ -279,58 +293,87 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
             const SizedBox(height: 20),
             _buildSectionLabel(context, 'Height & Weight'),
             const SizedBox(height: 20),
-            Text(
-              'Height: ${heightValue.toStringAsFixed(1)} $heightUnit',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
+            Semantics(
+              label: 'Height ${heightValue.toStringAsFixed(1)} $heightUnit',
+              child: Text(
+                'Height: ${heightValue.toStringAsFixed(1)} $heightUnit',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            Slider(
-              value: heightValue.clamp(minHeight, maxHeight),
-              min: minHeight,
-              max: maxHeight,
-              divisions: (maxHeight - minHeight).round(),
-              onChanged: (v) => setState(() {
-                _heightCm = isMetric ? v : UnitConverter.inToCm(v);
-              }),
+            Semantics(
+              label: 'Height slider',
+              value: '${heightValue.toStringAsFixed(1)} $heightUnit',
+              increasedValue:
+                  '${(heightValue + 1).clamp(minHeight, maxHeight).toStringAsFixed(1)} $heightUnit',
+              decreasedValue:
+                  '${(heightValue - 1).clamp(minHeight, maxHeight).toStringAsFixed(1)} $heightUnit',
+              child: Slider(
+                value: heightValue.clamp(minHeight, maxHeight),
+                min: minHeight,
+                max: maxHeight,
+                divisions: (maxHeight - minHeight).round(),
+                onChanged: (v) => setState(() {
+                  _heightCm = isMetric ? v : UnitConverter.inToCm(v);
+                }),
+              ),
             ),
             const SizedBox(height: 10),
-            Text(
-              'Weight: ${weightValue.toStringAsFixed(1)} $weightUnit',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
+            Semantics(
+              label: 'Weight ${weightValue.toStringAsFixed(1)} $weightUnit',
+              child: Text(
+                'Weight: ${weightValue.toStringAsFixed(1)} $weightUnit',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            Slider(
-              value: weightValue.clamp(minWeight, maxWeight),
-              min: minWeight,
-              max: maxWeight,
-              divisions: (maxWeight - minWeight).round(),
-              onChanged: (v) => setState(() {
-                _weightKg = isMetric ? v : UnitConverter.lbToKg(v);
-              }),
+            Semantics(
+              label: 'Weight slider',
+              value: '${weightValue.toStringAsFixed(1)} $weightUnit',
+              increasedValue:
+                  '${(weightValue + 1).clamp(minWeight, maxWeight).toStringAsFixed(1)} $weightUnit',
+              decreasedValue:
+                  '${(weightValue - 1).clamp(minWeight, maxWeight).toStringAsFixed(1)} $weightUnit',
+              child: Slider(
+                value: weightValue.clamp(minWeight, maxWeight),
+                min: minWeight,
+                max: maxWeight,
+                divisions: (maxWeight - minWeight).round(),
+                onChanged: (v) => setState(() {
+                  _weightKg = isMetric ? v : UnitConverter.lbToKg(v);
+                }),
+              ),
             ),
             const SizedBox(height: 10),
-            Text(
-              'Target BMI: ${_targetBmi.toStringAsFixed(1)}',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
+            Semantics(
+              label: 'Target BMI ${_targetBmi.toStringAsFixed(1)}',
+              child: Text(
+                'Target BMI: ${_targetBmi.toStringAsFixed(1)}',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            Slider(
-              value: _targetBmi,
-              min: _minTargetBmi,
-              max: _maxTargetBmi,
-              divisions: ((_maxTargetBmi - _minTargetBmi) * 2).round(),
-              onChanged: (v) {
-                setState(() {
-                  _targetBmi = v;
-                });
-                widget.onTargetBmiChanged(v);
-              },
+            Semantics(
+              label: 'Target BMI slider',
+              value: _targetBmi.toStringAsFixed(1),
+              child: Slider(
+                value: _targetBmi,
+                min: _minTargetBmi,
+                max: _maxTargetBmi,
+                divisions: ((_maxTargetBmi - _minTargetBmi) * 2).round(),
+                onChanged: (v) {
+                  setState(() {
+                    _targetBmi = _clampTargetBmi(v);
+                  });
+                  widget.onTargetBmiChanged(_targetBmi);
+                },
+              ),
             ),
           ],
         ),
@@ -371,26 +414,29 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
           children: [
             _buildSectionLabel(context, 'Your Result'),
             const SizedBox(height: 18),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: _result != null
-                  ? _StyledResultContent(
-                      key: ValueKey<double>(_result!.value),
-                      result: _result!,
-                      heightCm: _heightCm,
-                      weightKg: _weightKg,
-                      targetBmi: _targetBmi,
-                      colorScheme: colorScheme,
-                      textTheme: theme.textTheme,
-                    )
-                  : _EmptyResultPlaceholder(
-                      key: const ValueKey<String>('empty'),
-                      colorScheme: colorScheme,
-                      textTheme: theme.textTheme,
-                    ),
+            Semantics(
+              liveRegion: true,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child: _result != null
+                    ? _StyledResultContent(
+                        key: ValueKey<double>(_result!.value),
+                        result: _result!,
+                        heightCm: _heightCm,
+                        weightKg: _weightKg,
+                        targetBmi: _targetBmi,
+                        colorScheme: colorScheme,
+                        textTheme: theme.textTheme,
+                      )
+                    : _EmptyResultPlaceholder(
+                        key: const ValueKey<String>('empty'),
+                        colorScheme: colorScheme,
+                        textTheme: theme.textTheme,
+                      ),
+              ),
             ),
           ],
         ),
