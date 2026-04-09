@@ -5,6 +5,7 @@ import 'package:bmi_calculator/core/utils/bmi_calculator.dart';
 import 'package:bmi_calculator/core/utils/unit_converter.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/ui/screens/bmi_info_screen.dart';
 import 'package:bmi_calculator/ui/screens/settings_screen.dart';
 
 /// Main BMI calculator screen with header, input area, and result area.
@@ -127,6 +128,17 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
       appBar: AppBar(
         title: const Text('BMI Calculator'),
         actions: [
+          IconButton(
+            tooltip: 'BMI info',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const BmiInfoScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.info_outline),
+          ),
           IconButton(
             tooltip: 'Settings',
             onPressed: () {
