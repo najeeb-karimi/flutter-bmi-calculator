@@ -24,129 +24,132 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              colorScheme.surface,
-              colorScheme.surfaceContainerLowest,
-            ],
+      body: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colorScheme.surface,
+                colorScheme.surfaceContainerLowest,
+              ],
+            ),
           ),
-        ),
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 52,
-                              height: 52,
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.12,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                borderRadius: BorderRadius.circular(16),
+                                child: Icon(
+                                  Icons.tune_rounded,
+                                  color: colorScheme.primary,
+                                ),
                               ),
-                              child: Icon(
-                                Icons.tune_rounded,
-                                color: colorScheme.primary,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Personalize your experience',
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Choose your preferred units and appearance for a cleaner day-to-day experience.',
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _SettingsCard(
+                        icon: Icons.straighten_rounded,
+                        title: 'Default units',
+                        subtitle: 'Choose app-wide preferred units',
+                        child: DropdownButtonFormField<MeasurementUnit>(
+                          value: defaultUnit,
+                          decoration: const InputDecoration(
+                            labelText: 'Measurement system',
+                          ),
+                          onChanged: (value) {
+                            if (value != null) onDefaultUnitChanged(value);
+                          },
+                          items: MeasurementUnit.values
+                              .map(
+                                (unit) => DropdownMenuItem<MeasurementUnit>(
+                                  value: unit,
+                                  child: Text(unit.label),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _SettingsCard(
+                        icon: Icons.palette_outlined,
+                        title: 'Theme',
+                        subtitle: 'Choose app appearance mode',
+                        child: DropdownButtonFormField<ThemeMode>(
+                          value: currentThemeMode,
+                          decoration: const InputDecoration(
+                            labelText: 'Appearance',
+                          ),
+                          onChanged: (value) {
+                            if (value != null) onThemeModeChanged(value);
+                          },
+                          items: const [
+                            DropdownMenuItem<ThemeMode>(
+                              value: ThemeMode.system,
+                              child: Text('System'),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Personalize your experience',
-                                    style:
-                                        theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Choose your preferred units and appearance for a cleaner day-to-day experience.',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            DropdownMenuItem<ThemeMode>(
+                              value: ThemeMode.light,
+                              child: Text('Light'),
+                            ),
+                            DropdownMenuItem<ThemeMode>(
+                              value: ThemeMode.dark,
+                              child: Text('Dark'),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _SettingsCard(
-                      icon: Icons.straighten_rounded,
-                      title: 'Default units',
-                      subtitle: 'Choose app-wide preferred units',
-                      child: DropdownButtonFormField<MeasurementUnit>(
-                        value: defaultUnit,
-                        decoration: const InputDecoration(
-                          labelText: 'Measurement system',
-                        ),
-                        onChanged: (value) {
-                          if (value != null) onDefaultUnitChanged(value);
-                        },
-                        items: MeasurementUnit.values
-                            .map(
-                              (unit) => DropdownMenuItem<MeasurementUnit>(
-                                value: unit,
-                                child: Text(unit.label),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _SettingsCard(
-                      icon: Icons.palette_outlined,
-                      title: 'Theme',
-                      subtitle: 'Choose app appearance mode',
-                      child: DropdownButtonFormField<ThemeMode>(
-                        value: currentThemeMode,
-                        decoration: const InputDecoration(
-                          labelText: 'Appearance',
-                        ),
-                        onChanged: (value) {
-                          if (value != null) onThemeModeChanged(value);
-                        },
-                        items: const [
-                          DropdownMenuItem<ThemeMode>(
-                            value: ThemeMode.system,
-                            child: Text('System'),
-                          ),
-                          DropdownMenuItem<ThemeMode>(
-                            value: ThemeMode.light,
-                            child: Text('Light'),
-                          ),
-                          DropdownMenuItem<ThemeMode>(
-                            value: ThemeMode.dark,
-                            child: Text('Dark'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
