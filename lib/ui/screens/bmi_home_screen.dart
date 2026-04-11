@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:bmi_calculator/core/constants/bmi_tips.dart';
+import 'package:bmi_calculator/core/utils/share_text_builder.dart';
 import 'package:bmi_calculator/core/utils/bmi_calculator.dart';
 import 'package:bmi_calculator/core/utils/unit_converter.dart';
+import 'package:bmi_calculator/models/bmi_entry.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/user_goal.dart';
 import 'package:bmi_calculator/ui/navigation/app_routes.dart';
 
 /// Main BMI calculator screen with header, input area, and result area.
@@ -17,6 +21,10 @@ class BmiHomeScreen extends StatefulWidget {
     required this.onDefaultUnitChanged,
     required this.onThemeModeChanged,
     required this.onTargetBmiChanged,
+    required this.onSaveResult,
+    required this.onLoadHistory,
+    required this.onDeleteHistoryEntry,
+    required this.onClearHistory,
   });
 
   final MeasurementUnit defaultUnit;
@@ -25,6 +33,10 @@ class BmiHomeScreen extends StatefulWidget {
   final ValueChanged<MeasurementUnit> onDefaultUnitChanged;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final ValueChanged<double> onTargetBmiChanged;
+  final Future<void> Function(BmiEntry entry) onSaveResult;
+  final Future<List<BmiEntry>> Function() onLoadHistory;
+  final Future<void> Function(String id) onDeleteHistoryEntry;
+  final Future<void> Function() onClearHistory;
 
   @override
   State<BmiHomeScreen> createState() => _BmiHomeScreenState();
@@ -44,6 +56,15 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   late double _targetBmi;
   BmiResult? _result;
   bool _isCalculatePressed = false;
+  late final TextEditingController _heightController;
+  late final TextEditingController _weightController;
+  late final TextEditingController _targetBmiController;
+  late final FocusNode _heightFocusNode;
+  late final FocusNode _weightFocusNode;
+  late final FocusNode _targetBmiFocusNode;
+  String? _heightErrorText;
+  String? _weightErrorText;
+  String? _targetBmiErrorText;
 
   double _clampTargetBmi(double value) {
     return value.clamp(_minTargetBmi, _maxTargetBmi);
@@ -54,6 +75,14 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     super.initState();
     _unit = widget.defaultUnit;
     _targetBmi = _clampTargetBmi(widget.initialTargetBmi);
+    _heightController = TextEditingController();
+    _weightController = TextEditingController();
+    _targetBmiController = TextEditingController();
+    _heightFocusNode = FocusNode()..addListener(_commitHeightFromTextIfNeeded);
+    _weightFocusNode = FocusNode()..addListener(_commitWeightFromTextIfNeeded);
+    _targetBmiFocusNode = FocusNode()
+      ..addListener(_commitTargetBmiFromTextIfNeeded);
+    _syncInputControllers();
   }
 
   @override
@@ -61,17 +90,39 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.defaultUnit != widget.defaultUnit) {
       _unit = widget.defaultUnit;
+      _syncInputControllers();
     }
     if (oldWidget.initialTargetBmi != widget.initialTargetBmi) {
       _targetBmi = _clampTargetBmi(widget.initialTargetBmi);
+      _targetBmiController.text = _formatOneDecimal(_targetBmi);
     }
+  }
+
+  @override
+  void dispose() {
+    _heightController.dispose();
+    _weightController.dispose();
+    _targetBmiController.dispose();
+    _heightFocusNode
+      ..removeListener(_commitHeightFromTextIfNeeded)
+      ..dispose();
+    _weightFocusNode
+      ..removeListener(_commitWeightFromTextIfNeeded)
+      ..dispose();
+    _targetBmiFocusNode
+      ..removeListener(_commitTargetBmiFromTextIfNeeded)
+      ..dispose();
+    super.dispose();
   }
 
   void _onUnitChanged(MeasurementUnit newUnit) {
     if (_unit == newUnit) return;
     setState(() {
       _unit = newUnit;
+      _heightErrorText = null;
+      _weightErrorText = null;
     });
+    _syncInputControllers();
     widget.onDefaultUnitChanged(newUnit);
   }
 
@@ -98,6 +149,157 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
         unit: _unit,
       );
     });
+  }
+
+  void _syncInputControllers() {
+    _heightController.text = _formatOneDecimal(_displayHeightForCurrentUnit);
+    _weightController.text = _formatOneDecimal(_displayWeightForCurrentUnit);
+    _targetBmiController.text = _formatOneDecimal(_targetBmi);
+  }
+
+  double get _displayHeightForCurrentUnit {
+    return _unit == MeasurementUnit.metric
+        ? _heightCm
+        : UnitConverter.cmToIn(_heightCm);
+  }
+
+  double get _displayWeightForCurrentUnit {
+    return _unit == MeasurementUnit.metric
+        ? _weightKg
+        : UnitConverter.kgToLb(_weightKg);
+  }
+
+  String _formatOneDecimal(double value) => value.toStringAsFixed(1);
+
+  void _commitHeightFromTextIfNeeded() {
+    if (_heightFocusNode.hasFocus) return;
+    _applyHeightFromInput(_heightController.text);
+  }
+
+  void _commitWeightFromTextIfNeeded() {
+    if (_weightFocusNode.hasFocus) return;
+    _applyWeightFromInput(_weightController.text);
+  }
+
+  void _commitTargetBmiFromTextIfNeeded() {
+    if (_targetBmiFocusNode.hasFocus) return;
+    _applyTargetBmiFromInput(_targetBmiController.text);
+  }
+
+  void _applyHeightFromInput(String rawValue) {
+    final parsedValue = double.tryParse(rawValue.trim());
+    final minHeight = _unit == MeasurementUnit.metric
+        ? _minHeightCm
+        : UnitConverter.cmToIn(_minHeightCm);
+    final maxHeight = _unit == MeasurementUnit.metric
+        ? _maxHeightCm
+        : UnitConverter.cmToIn(_maxHeightCm);
+    final unitLabel = _unit == MeasurementUnit.metric ? 'cm' : 'in';
+
+    if (parsedValue == null ||
+        parsedValue < minHeight ||
+        parsedValue > maxHeight) {
+      setState(() {
+        _heightErrorText =
+            'Enter a value between ${_formatOneDecimal(minHeight)} and ${_formatOneDecimal(maxHeight)} $unitLabel';
+      });
+      return;
+    }
+
+    setState(() {
+      _heightCm = _unit == MeasurementUnit.metric
+          ? parsedValue
+          : UnitConverter.inToCm(parsedValue);
+      _heightErrorText = null;
+    });
+    _heightController.text = _formatOneDecimal(_displayHeightForCurrentUnit);
+  }
+
+  void _applyWeightFromInput(String rawValue) {
+    final parsedValue = double.tryParse(rawValue.trim());
+    final minWeight = _unit == MeasurementUnit.metric
+        ? _minWeightKg
+        : UnitConverter.kgToLb(_minWeightKg);
+    final maxWeight = _unit == MeasurementUnit.metric
+        ? _maxWeightKg
+        : UnitConverter.kgToLb(_maxWeightKg);
+    final unitLabel = _unit == MeasurementUnit.metric ? 'kg' : 'lb';
+
+    if (parsedValue == null ||
+        parsedValue < minWeight ||
+        parsedValue > maxWeight) {
+      setState(() {
+        _weightErrorText =
+            'Enter a value between ${_formatOneDecimal(minWeight)} and ${_formatOneDecimal(maxWeight)} $unitLabel';
+      });
+      return;
+    }
+
+    setState(() {
+      _weightKg = _unit == MeasurementUnit.metric
+          ? parsedValue
+          : UnitConverter.lbToKg(parsedValue);
+      _weightErrorText = null;
+    });
+    _weightController.text = _formatOneDecimal(_displayWeightForCurrentUnit);
+  }
+
+  void _applyTargetBmiFromInput(String rawValue) {
+    final parsedValue = double.tryParse(rawValue.trim());
+    if (parsedValue == null ||
+        parsedValue < _minTargetBmi ||
+        parsedValue > _maxTargetBmi) {
+      setState(() {
+        _targetBmiErrorText =
+            'Enter a value between ${_formatOneDecimal(_minTargetBmi)} and ${_formatOneDecimal(_maxTargetBmi)}';
+      });
+      return;
+    }
+
+    setState(() {
+      _targetBmi = _clampTargetBmi(parsedValue);
+      _targetBmiErrorText = null;
+    });
+    _targetBmiController.text = _formatOneDecimal(_targetBmi);
+    widget.onTargetBmiChanged(_targetBmi);
+  }
+
+  BmiEntry _buildCurrentEntry() {
+    final result = _result!;
+    final now = DateTime.now();
+    final idSuffix = result.value.toStringAsFixed(1).replaceAll('.', '');
+    return BmiEntry(
+      id: 'bmi-${now.microsecondsSinceEpoch}-$idSuffix',
+      createdAt: now,
+      heightCm: _heightCm,
+      weightKg: _weightKg,
+      unitUsed: _unit,
+      bmiValue: result.value,
+      category: result.category,
+      goalSnapshot: UserGoal(type: GoalType.bmi, value: _targetBmi),
+    );
+  }
+
+  Future<void> _saveCurrentResult() async {
+    if (_result == null) return;
+
+    final entry = _buildCurrentEntry();
+    await widget.onSaveResult(entry);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✅ Result saved to history.'),
+      ),
+    );
+  }
+
+  Future<void> _shareCurrentResult() async {
+    if (_result == null) return;
+
+    final entry = _buildCurrentEntry();
+    final shareText = buildBmiShareText(entry: entry);
+    await Share.share(shareText);
   }
 
   void _setCalculatePressed(bool value) {
@@ -127,6 +329,19 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
       appBar: AppBar(
         title: const Text('BMI Calculator'),
         actions: [
+          IconButton(
+            tooltip: 'History',
+            onPressed: () {
+              Navigator.of(context).push(
+                AppRoutes.history(
+                  loadEntries: widget.onLoadHistory,
+                  onDeleteEntry: widget.onDeleteHistoryEntry,
+                  onClearHistory: widget.onClearHistory,
+                ),
+              );
+            },
+            icon: const Icon(Icons.history_rounded),
+          ),
           IconButton(
             tooltip: 'BMI info',
             onPressed: () {
@@ -257,8 +472,8 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   Widget _buildInputCard(BuildContext context) {
     final theme = Theme.of(context);
     final isMetric = _unit == MeasurementUnit.metric;
-    final heightValue = isMetric ? _heightCm : UnitConverter.cmToIn(_heightCm);
-    final weightValue = isMetric ? _weightKg : UnitConverter.kgToLb(_weightKg);
+    final heightValue = _displayHeightForCurrentUnit;
+    final weightValue = _displayWeightForCurrentUnit;
     final minHeight =
         isMetric ? _minHeightCm : UnitConverter.cmToIn(_minHeightCm);
     final maxHeight =
@@ -339,8 +554,20 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                 divisions: (maxHeight - minHeight).round(),
                 onChanged: (v) => setState(() {
                   _heightCm = isMetric ? v : UnitConverter.inToCm(v);
+                  _heightErrorText = null;
+                  _heightController.text =
+                      _formatOneDecimal(_displayHeightForCurrentUnit);
                 }),
               ),
+            ),
+            const SizedBox(height: 12),
+            _buildValueEditor(
+              controller: _heightController,
+              focusNode: _heightFocusNode,
+              label: 'Height input',
+              unit: heightUnit,
+              errorText: _heightErrorText,
+              onSubmitted: _applyHeightFromInput,
             ),
             const SizedBox(height: 10),
             Semantics(
@@ -367,8 +594,20 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                 divisions: (maxWeight - minWeight).round(),
                 onChanged: (v) => setState(() {
                   _weightKg = isMetric ? v : UnitConverter.lbToKg(v);
+                  _weightErrorText = null;
+                  _weightController.text =
+                      _formatOneDecimal(_displayWeightForCurrentUnit);
                 }),
               ),
+            ),
+            const SizedBox(height: 12),
+            _buildValueEditor(
+              controller: _weightController,
+              focusNode: _weightFocusNode,
+              label: 'Weight input',
+              unit: weightUnit,
+              errorText: _weightErrorText,
+              onSubmitted: _applyWeightFromInput,
             ),
             const SizedBox(height: 10),
             Semantics(
@@ -392,10 +631,21 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                 onChanged: (v) {
                   setState(() {
                     _targetBmi = _clampTargetBmi(v);
+                    _targetBmiErrorText = null;
+                    _targetBmiController.text = _formatOneDecimal(_targetBmi);
                   });
                   widget.onTargetBmiChanged(_targetBmi);
                 },
               ),
+            ),
+            const SizedBox(height: 12),
+            _buildValueEditor(
+              controller: _targetBmiController,
+              focusNode: _targetBmiFocusNode,
+              label: 'Target BMI input',
+              unit: null,
+              errorText: _targetBmiErrorText,
+              onSubmitted: _applyTargetBmiFromInput,
             ),
           ],
         ),
@@ -403,7 +653,32 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     );
   }
 
+  Widget _buildValueEditor({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String? unit,
+    required String? errorText,
+    required ValueChanged<String> onSubmitted,
+  }) {
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textInputAction: TextInputAction.done,
+      onSubmitted: onSubmitted,
+      decoration: InputDecoration(
+        labelText: label,
+        suffixText: unit,
+        errorText: errorText,
+      ),
+    );
+  }
+
   Widget _buildCalculateButton(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return GestureDetector(
       onTapDown: (_) => _setCalculatePressed(true),
       onTapCancel: () => _setCalculatePressed(false),
@@ -414,11 +689,20 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
         curve: Curves.easeOut,
         child: FilledButton.icon(
           onPressed: _onCalculate,
-          icon: const Icon(Icons.monitor_weight_outlined),
-          label: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text('Calculate BMI'),
+          style: FilledButton.styleFrom(
+            elevation: 0,
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            minimumSize: const Size.fromHeight(40),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(50),
+            ),
+            textStyle: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
+          icon: const Icon(Icons.monitor_weight_outlined),
+          label: const Text('Calculate BMI'),
         ),
       ),
     );
@@ -460,9 +744,62 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                       ),
               ),
             ),
+            if (_result != null) ...[
+              const SizedBox(height: 18),
+              _buildResultActions(context),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildResultActions(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _saveCurrentResult,
+            style: FilledButton.styleFrom(
+              elevation: 0,
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              minimumSize: const Size.fromHeight(40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(50),
+              ),
+              textStyle: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            icon: const Icon(Icons.save_rounded),
+            label: const Text('Save'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _shareCurrentResult,
+            style: FilledButton.styleFrom(
+              elevation: 0,
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              minimumSize: const Size.fromHeight(40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(50),
+              ),
+              textStyle: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            icon: const Icon(Icons.ios_share_rounded),
+            label: const Text('Share'),
+          ),
+        ),
+      ],
     );
   }
 }

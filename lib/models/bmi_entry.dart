@@ -26,6 +26,19 @@ class BmiEntry {
   final UserGoal? goalSnapshot;
   final PersonalProfile? profileSnapshot;
 
+  String get categoryLabel {
+    switch (category) {
+      case BmiCategory.underweight:
+        return 'Underweight';
+      case BmiCategory.normal:
+        return 'Normal';
+      case BmiCategory.overweight:
+        return 'Overweight';
+      case BmiCategory.obese:
+        return 'Obese';
+    }
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
