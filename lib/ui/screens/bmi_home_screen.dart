@@ -5,8 +5,7 @@ import 'package:bmi_calculator/core/utils/bmi_calculator.dart';
 import 'package:bmi_calculator/core/utils/unit_converter.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
-import 'package:bmi_calculator/ui/screens/bmi_info_screen.dart';
-import 'package:bmi_calculator/ui/screens/settings_screen.dart';
+import 'package:bmi_calculator/ui/navigation/app_routes.dart';
 
 /// Main BMI calculator screen with header, input area, and result area.
 class BmiHomeScreen extends StatefulWidget {
@@ -131,11 +130,7 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
           IconButton(
             tooltip: 'BMI info',
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const BmiInfoScreen(),
-                ),
-              );
+              Navigator.of(context).push(AppRoutes.bmiInfo());
             },
             icon: const Icon(Icons.info_outline),
           ),
@@ -143,20 +138,18 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
             tooltip: 'Settings',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => SettingsScreen(
-                    defaultUnit: _unit,
-                    currentThemeMode: widget.currentThemeMode,
-                    onDefaultUnitChanged: (unit) {
-                      widget.onDefaultUnitChanged(unit);
-                      if (_unit != unit) {
-                        setState(() {
-                          _unit = unit;
-                        });
-                      }
-                    },
-                    onThemeModeChanged: widget.onThemeModeChanged,
-                  ),
+                AppRoutes.settings(
+                  defaultUnit: _unit,
+                  currentThemeMode: widget.currentThemeMode,
+                  onDefaultUnitChanged: (unit) {
+                    widget.onDefaultUnitChanged(unit);
+                    if (_unit != unit) {
+                      setState(() {
+                        _unit = unit;
+                      });
+                    }
+                  },
+                  onThemeModeChanged: widget.onThemeModeChanged,
                 ),
               );
             },
