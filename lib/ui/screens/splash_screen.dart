@@ -69,72 +69,74 @@ class _SplashScreenState extends State<SplashScreen>
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  scheme.primary.withValues(alpha: 0.22),
-                  scheme.surface,
-                  scheme.secondary.withValues(alpha: 0.18),
-                ],
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            return Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    scheme.primary.withValues(alpha: 0.22),
+                    scheme.surface,
+                    scheme.secondary.withValues(alpha: 0.18),
+                  ],
+                ),
               ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Transform.rotate(
-                    angle: _iconRotation.value,
-                    child: Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: scheme.primary.withValues(alpha: 0.16),
-                        border: Border.all(
-                          color: scheme.primary.withValues(alpha: 0.45),
-                          width: 1.4,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.rotate(
+                      angle: _iconRotation.value,
+                      child: Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: scheme.primary.withValues(alpha: 0.16),
+                          border: Border.all(
+                            color: scheme.primary.withValues(alpha: 0.45),
+                            width: 1.4,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.monitor_weight_outlined,
+                          size: 46,
+                          color: scheme.primary,
                         ),
                       ),
-                      child: Icon(
-                        Icons.monitor_weight_outlined,
-                        size: 46,
-                        color: scheme.primary,
-                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Opacity(
-                    opacity: _textOpacity.value,
-                    child: Transform.scale(
-                      scale: _textScale.value,
-                      child: ShaderMask(
-                        shaderCallback: (bounds) {
-                          return LinearGradient(
-                            colors: [scheme.primary, scheme.secondary],
-                          ).createShader(bounds);
-                        },
-                        blendMode: BlendMode.srcIn,
-                        child: Text(
-                          'BMI Calculator',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.4,
+                    const SizedBox(height: 20),
+                    Opacity(
+                      opacity: _textOpacity.value,
+                      child: Transform.scale(
+                        scale: _textScale.value,
+                        child: ShaderMask(
+                          shaderCallback: (bounds) {
+                            return LinearGradient(
+                              colors: [scheme.primary, scheme.secondary],
+                            ).createShader(bounds);
+                          },
+                          blendMode: BlendMode.srcIn,
+                          child: Text(
+                            'BMI Calculator',
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
