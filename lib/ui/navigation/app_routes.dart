@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:bmi_calculator/models/bmi_entry.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
 import 'package:bmi_calculator/ui/screens/bmi_info_screen.dart';
-import 'package:bmi_calculator/ui/screens/history_placeholder_screen.dart';
+import 'package:bmi_calculator/ui/screens/history_screen.dart';
 import 'package:bmi_calculator/ui/screens/insights_placeholder_screen.dart';
 import 'package:bmi_calculator/ui/screens/settings_screen.dart';
 
@@ -31,9 +32,17 @@ class AppRoutes {
     );
   }
 
-  static Route<void> historyPlaceholder() {
+  static Route<void> history({
+    required Future<List<BmiEntry>> Function() loadEntries,
+    required Future<void> Function(String id) onDeleteEntry,
+    required Future<void> Function() onClearHistory,
+  }) {
     return MaterialPageRoute<void>(
-      builder: (_) => const HistoryPlaceholderScreen(),
+      builder: (_) => HistoryScreen(
+        loadEntries: loadEntries,
+        onDeleteEntry: onDeleteEntry,
+        onClearHistory: onClearHistory,
+      ),
     );
   }
 

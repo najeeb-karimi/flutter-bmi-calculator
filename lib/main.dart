@@ -98,6 +98,10 @@ class _BmiCalculatorAppState extends State<BmiCalculatorApp> {
       onDefaultUnitChanged: _onDefaultUnitChanged,
       onThemeModeChanged: _onThemeModeChanged,
       onTargetBmiChanged: _onTargetBmiChanged,
+      onSaveResult: widget.historyRepository.appendEntry,
+      onLoadHistory: widget.historyRepository.loadEntries,
+      onDeleteHistoryEntry: widget.historyRepository.deleteEntry,
+      onClearHistory: widget.historyRepository.clearEntries,
     );
 
     return MaterialApp(
