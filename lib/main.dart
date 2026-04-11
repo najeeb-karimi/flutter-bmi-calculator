@@ -1,17 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:bmi_calculator/core/repositories/history_repository.dart';
+import 'package:bmi_calculator/core/repositories/settings_repository.dart';
 import 'package:bmi_calculator/core/theme/app_theme.dart';
-import 'package:bmi_calculator/core/utils/preferences.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/user_goal.dart';
 import 'package:bmi_calculator/ui/screens/bmi_home_screen.dart';
 import 'package:bmi_calculator/ui/screens/splash_screen.dart';
 
-void main() {
-  runApp(const BmiCalculatorApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+  runApp(
+    BmiCalculatorApp(
+      settingsRepository: SettingsRepository(prefs),
+      historyRepository: HistoryRepository(prefs),
+    ),
+  );
 }
 
 class BmiCalculatorApp extends StatefulWidget {
-  const BmiCalculatorApp({super.key});
+  const BmiCalculatorApp({
+    super.key,
+    required this.settingsRepository,
+    required this.historyRepository,
+  });
+
+  final SettingsRepository settingsRepository;
+  final HistoryRepository historyRepository;
 
   @override
   State<BmiCalculatorApp> createState() => _BmiCalculatorAppState();
@@ -29,15 +47,19 @@ class _BmiCalculatorAppState extends State<BmiCalculatorApp> {
   }
 
   Future<void> _loadPersistedSettings() async {
-    final persistedTheme = await AppPreferences.loadThemeMode();
-    final persistedUnit = await AppPreferences.loadDefaultUnit();
-    final persistedTargetBmi = await AppPreferences.loadTargetBmi();
+    await widget.settingsRepository.migrateLegacySettingsIfNeeded();
+
+    final persistedTheme = await widget.settingsRepository.loadThemeMode();
+    final persistedUnit = await widget.settingsRepository.loadDefaultUnit();
+    final persistedGoal = await widget.settingsRepository.loadGoal();
+    final persistedTargetBmi =
+        persistedGoal?.type == GoalType.bmi ? persistedGoal!.value : 22.0;
 
     if (!mounted) return;
     setState(() {
       _themeMode = persistedTheme ?? ThemeMode.system;
       _defaultUnit = persistedUnit ?? MeasurementUnit.metric;
-      _targetBmi = persistedTargetBmi ?? 22;
+      _targetBmi = persistedTargetBmi;
     });
   }
 
@@ -45,21 +67,26 @@ class _BmiCalculatorAppState extends State<BmiCalculatorApp> {
     setState(() {
       _themeMode = mode;
     });
-    AppPreferences.saveThemeMode(mode);
+    widget.settingsRepository.saveThemeMode(mode);
   }
 
   void _onDefaultUnitChanged(MeasurementUnit unit) {
     setState(() {
       _defaultUnit = unit;
     });
-    AppPreferences.saveDefaultUnit(unit);
+    widget.settingsRepository.saveDefaultUnit(unit);
   }
 
   void _onTargetBmiChanged(double targetBmi) {
     setState(() {
       _targetBmi = targetBmi;
     });
-    AppPreferences.saveTargetBmi(targetBmi);
+    widget.settingsRepository.saveGoal(
+      UserGoal(
+        type: GoalType.bmi,
+        value: targetBmi,
+      ),
+    );
   }
 
   @override
