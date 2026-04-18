@@ -5,6 +5,7 @@ import 'package:bmi_calculator/core/repositories/history_repository.dart';
 import 'package:bmi_calculator/core/repositories/settings_repository.dart';
 import 'package:bmi_calculator/core/theme/app_theme.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/personal_profile.dart';
 import 'package:bmi_calculator/models/user_goal.dart';
 import 'package:bmi_calculator/ui/screens/bmi_home_screen.dart';
 import 'package:bmi_calculator/ui/screens/splash_screen.dart';
@@ -38,7 +39,8 @@ class BmiCalculatorApp extends StatefulWidget {
 class _BmiCalculatorAppState extends State<BmiCalculatorApp> {
   ThemeMode _themeMode = ThemeMode.system;
   MeasurementUnit _defaultUnit = MeasurementUnit.metric;
-  double _targetBmi = 22;
+  UserGoal _activeGoal = const UserGoal(type: GoalType.bmi, value: 22);
+  PersonalProfile? _personalProfile;
 
   @override
   void initState() {
@@ -52,14 +54,15 @@ class _BmiCalculatorAppState extends State<BmiCalculatorApp> {
     final persistedTheme = await widget.settingsRepository.loadThemeMode();
     final persistedUnit = await widget.settingsRepository.loadDefaultUnit();
     final persistedGoal = await widget.settingsRepository.loadGoal();
-    final persistedTargetBmi =
-        persistedGoal?.type == GoalType.bmi ? persistedGoal!.value : 22.0;
+    final persistedProfile = await widget.settingsRepository.loadProfile();
 
     if (!mounted) return;
     setState(() {
       _themeMode = persistedTheme ?? ThemeMode.system;
       _defaultUnit = persistedUnit ?? MeasurementUnit.metric;
-      _targetBmi = persistedTargetBmi;
+      _activeGoal =
+          persistedGoal ?? const UserGoal(type: GoalType.bmi, value: 22);
+      _personalProfile = _normalizeProfile(persistedProfile);
     });
   }
 
@@ -77,27 +80,36 @@ class _BmiCalculatorAppState extends State<BmiCalculatorApp> {
     widget.settingsRepository.saveDefaultUnit(unit);
   }
 
-  void _onTargetBmiChanged(double targetBmi) {
+  void _onGoalChanged(UserGoal goal) {
     setState(() {
-      _targetBmi = targetBmi;
+      _activeGoal = goal;
     });
-    widget.settingsRepository.saveGoal(
-      UserGoal(
-        type: GoalType.bmi,
-        value: targetBmi,
-      ),
-    );
+    widget.settingsRepository.saveGoal(goal);
+  }
+
+  void _onProfileChanged(PersonalProfile? profile) {
+    final normalizedProfile = _normalizeProfile(profile);
+    setState(() {
+      _personalProfile = normalizedProfile;
+    });
+    if (normalizedProfile == null) {
+      widget.settingsRepository.clearProfile();
+      return;
+    }
+    widget.settingsRepository.saveProfile(normalizedProfile);
   }
 
   @override
   Widget build(BuildContext context) {
     final homeScreen = BmiHomeScreen(
       defaultUnit: _defaultUnit,
-      initialTargetBmi: _targetBmi,
+      activeGoal: _activeGoal,
+      personalProfile: _personalProfile,
       currentThemeMode: _themeMode,
       onDefaultUnitChanged: _onDefaultUnitChanged,
       onThemeModeChanged: _onThemeModeChanged,
-      onTargetBmiChanged: _onTargetBmiChanged,
+      onGoalChanged: _onGoalChanged,
+      onProfileChanged: _onProfileChanged,
       onSaveResult: widget.historyRepository.appendEntry,
       onLoadHistory: widget.historyRepository.loadEntries,
       onDeleteHistoryEntry: widget.historyRepository.deleteEntry,
@@ -113,5 +125,13 @@ class _BmiCalculatorAppState extends State<BmiCalculatorApp> {
         nextScreen: homeScreen,
       ),
     );
+  }
+
+  PersonalProfile? _normalizeProfile(PersonalProfile? profile) {
+    if (profile == null) return null;
+    final isEmpty = profile.age == null &&
+        profile.sexAtBirth == null &&
+        profile.activityLevel == null;
+    return isEmpty ? null : profile;
   }
 }
