@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:bmi_calculator/core/utils/unit_converter.dart';
 import 'package:bmi_calculator/models/bmi_entry.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/user_goal.dart';
+import 'package:bmi_calculator/ui/navigation/app_routes.dart';
 
 class HistoryDetailScreen extends StatelessWidget {
   const HistoryDetailScreen({
@@ -125,17 +127,34 @@ class HistoryDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Target BMI: ${entry.goalSnapshot!.value.toStringAsFixed(1)}',
+                        _goalSnapshotText(entry.goalSnapshot!),
                       ),
                     ],
                   ),
                 ),
               ),
             ],
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(AppRoutes.insights(entry: entry));
+              },
+              icon: const Icon(Icons.insights_outlined),
+              label: const Text('View Insights'),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+String _goalSnapshotText(UserGoal goal) {
+  switch (goal.type) {
+    case GoalType.bmi:
+      return 'Target BMI: ${goal.value.toStringAsFixed(1)}';
+    case GoalType.weight:
+      return 'Target weight: ${goal.value.toStringAsFixed(1)} kg';
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:bmi_calculator/core/utils/unit_converter.dart';
 import 'package:bmi_calculator/models/bmi_entry.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/user_goal.dart';
 
 String buildBmiShareText({required BmiEntry entry}) {
   final unit = entry.unitUsed;
@@ -15,7 +16,7 @@ String buildBmiShareText({required BmiEntry entry}) {
   final localDateTime = entry.createdAt.toLocal();
   final dateText = _formatDateTime(localDateTime);
   final targetText = entry.goalSnapshot != null
-      ? '\nTarget BMI: ${entry.goalSnapshot!.value.toStringAsFixed(1)}'
+      ? '\n${_goalText(entry.goalSnapshot!, unit)}'
       : '';
 
   return 'BMI Result\n'
@@ -24,6 +25,18 @@ String buildBmiShareText({required BmiEntry entry}) {
       'Height: ${height.toStringAsFixed(1)} $heightUnit\n'
       'Weight: ${weight.toStringAsFixed(1)} $weightUnit'
       '$targetText';
+}
+
+String _goalText(UserGoal goal, MeasurementUnit unit) {
+  switch (goal.type) {
+    case GoalType.bmi:
+      return 'Target BMI: ${goal.value.toStringAsFixed(1)}';
+    case GoalType.weight:
+      final displayWeight =
+          unit == MeasurementUnit.metric ? goal.value : UnitConverter.kgToLb(goal.value);
+      final weightUnit = unit == MeasurementUnit.metric ? 'kg' : 'lb';
+      return 'Target Weight: ${displayWeight.toStringAsFixed(1)} $weightUnit';
+  }
 }
 
 String _formatDateTime(DateTime value) {

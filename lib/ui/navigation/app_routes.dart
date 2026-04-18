@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:bmi_calculator/models/bmi_entry.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/personal_profile.dart';
+import 'package:bmi_calculator/models/user_goal.dart';
 import 'package:bmi_calculator/ui/screens/bmi_info_screen.dart';
 import 'package:bmi_calculator/ui/screens/history_screen.dart';
-import 'package:bmi_calculator/ui/screens/insights_placeholder_screen.dart';
+import 'package:bmi_calculator/ui/screens/insights_screen.dart';
 import 'package:bmi_calculator/ui/screens/settings_screen.dart';
 
 class AppRoutes {
@@ -19,15 +21,23 @@ class AppRoutes {
   static Route<void> settings({
     required MeasurementUnit defaultUnit,
     required ThemeMode currentThemeMode,
+    required UserGoal currentGoal,
+    required PersonalProfile? currentProfile,
     required ValueChanged<MeasurementUnit> onDefaultUnitChanged,
     required ValueChanged<ThemeMode> onThemeModeChanged,
+    required ValueChanged<UserGoal> onGoalChanged,
+    required ValueChanged<PersonalProfile?> onProfileChanged,
   }) {
     return MaterialPageRoute<void>(
       builder: (_) => SettingsScreen(
         defaultUnit: defaultUnit,
         currentThemeMode: currentThemeMode,
+        currentGoal: currentGoal,
+        currentProfile: currentProfile,
         onDefaultUnitChanged: onDefaultUnitChanged,
         onThemeModeChanged: onThemeModeChanged,
+        onGoalChanged: onGoalChanged,
+        onProfileChanged: onProfileChanged,
       ),
     );
   }
@@ -46,9 +56,9 @@ class AppRoutes {
     );
   }
 
-  static Route<void> insightsPlaceholder() {
+  static Route<void> insights({required BmiEntry entry}) {
     return MaterialPageRoute<void>(
-      builder: (_) => const InsightsPlaceholderScreen(),
+      builder: (_) => InsightsScreen(entry: entry),
     );
   }
 }

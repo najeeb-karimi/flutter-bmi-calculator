@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:bmi_calculator/core/constants/bmi_tips.dart';
-import 'package:bmi_calculator/core/utils/share_text_builder.dart';
 import 'package:bmi_calculator/core/utils/bmi_calculator.dart';
+import 'package:bmi_calculator/core/utils/goal_progress_calculator.dart';
+import 'package:bmi_calculator/core/utils/healthy_weight_calculator.dart';
+import 'package:bmi_calculator/core/utils/share_text_builder.dart';
 import 'package:bmi_calculator/core/utils/unit_converter.dart';
 import 'package:bmi_calculator/models/bmi_entry.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
+import 'package:bmi_calculator/models/goal_progress.dart';
+import 'package:bmi_calculator/models/healthy_weight_range.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/personal_profile.dart';
 import 'package:bmi_calculator/models/user_goal.dart';
 import 'package:bmi_calculator/ui/navigation/app_routes.dart';
 
@@ -16,11 +21,13 @@ class BmiHomeScreen extends StatefulWidget {
   const BmiHomeScreen({
     super.key,
     required this.defaultUnit,
-    required this.initialTargetBmi,
+    required this.activeGoal,
+    required this.personalProfile,
     required this.currentThemeMode,
     required this.onDefaultUnitChanged,
     required this.onThemeModeChanged,
-    required this.onTargetBmiChanged,
+    required this.onGoalChanged,
+    required this.onProfileChanged,
     required this.onSaveResult,
     required this.onLoadHistory,
     required this.onDeleteHistoryEntry,
@@ -28,11 +35,13 @@ class BmiHomeScreen extends StatefulWidget {
   });
 
   final MeasurementUnit defaultUnit;
-  final double initialTargetBmi;
+  final UserGoal activeGoal;
+  final PersonalProfile? personalProfile;
   final ThemeMode currentThemeMode;
   final ValueChanged<MeasurementUnit> onDefaultUnitChanged;
   final ValueChanged<ThemeMode> onThemeModeChanged;
-  final ValueChanged<double> onTargetBmiChanged;
+  final ValueChanged<UserGoal> onGoalChanged;
+  final ValueChanged<PersonalProfile?> onProfileChanged;
   final Future<void> Function(BmiEntry entry) onSaveResult;
   final Future<List<BmiEntry>> Function() onLoadHistory;
   final Future<void> Function(String id) onDeleteHistoryEntry;
@@ -47,41 +56,27 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   static const double _maxHeightCm = 220;
   static const double _minWeightKg = 30;
   static const double _maxWeightKg = 150;
-  static const double _minTargetBmi = 18;
-  static const double _maxTargetBmi = 28;
 
   late MeasurementUnit _unit;
   double _heightCm = 170;
   double _weightKg = 70;
-  late double _targetBmi;
   BmiResult? _result;
   bool _isCalculatePressed = false;
   late final TextEditingController _heightController;
   late final TextEditingController _weightController;
-  late final TextEditingController _targetBmiController;
   late final FocusNode _heightFocusNode;
   late final FocusNode _weightFocusNode;
-  late final FocusNode _targetBmiFocusNode;
   String? _heightErrorText;
   String? _weightErrorText;
-  String? _targetBmiErrorText;
-
-  double _clampTargetBmi(double value) {
-    return value.clamp(_minTargetBmi, _maxTargetBmi);
-  }
 
   @override
   void initState() {
     super.initState();
     _unit = widget.defaultUnit;
-    _targetBmi = _clampTargetBmi(widget.initialTargetBmi);
     _heightController = TextEditingController();
     _weightController = TextEditingController();
-    _targetBmiController = TextEditingController();
     _heightFocusNode = FocusNode()..addListener(_commitHeightFromTextIfNeeded);
     _weightFocusNode = FocusNode()..addListener(_commitWeightFromTextIfNeeded);
-    _targetBmiFocusNode = FocusNode()
-      ..addListener(_commitTargetBmiFromTextIfNeeded);
     _syncInputControllers();
   }
 
@@ -92,25 +87,17 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
       _unit = widget.defaultUnit;
       _syncInputControllers();
     }
-    if (oldWidget.initialTargetBmi != widget.initialTargetBmi) {
-      _targetBmi = _clampTargetBmi(widget.initialTargetBmi);
-      _targetBmiController.text = _formatOneDecimal(_targetBmi);
-    }
   }
 
   @override
   void dispose() {
     _heightController.dispose();
     _weightController.dispose();
-    _targetBmiController.dispose();
     _heightFocusNode
       ..removeListener(_commitHeightFromTextIfNeeded)
       ..dispose();
     _weightFocusNode
       ..removeListener(_commitWeightFromTextIfNeeded)
-      ..dispose();
-    _targetBmiFocusNode
-      ..removeListener(_commitTargetBmiFromTextIfNeeded)
       ..dispose();
     super.dispose();
   }
@@ -154,7 +141,6 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   void _syncInputControllers() {
     _heightController.text = _formatOneDecimal(_displayHeightForCurrentUnit);
     _weightController.text = _formatOneDecimal(_displayWeightForCurrentUnit);
-    _targetBmiController.text = _formatOneDecimal(_targetBmi);
   }
 
   double get _displayHeightForCurrentUnit {
@@ -179,11 +165,6 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
   void _commitWeightFromTextIfNeeded() {
     if (_weightFocusNode.hasFocus) return;
     _applyWeightFromInput(_weightController.text);
-  }
-
-  void _commitTargetBmiFromTextIfNeeded() {
-    if (_targetBmiFocusNode.hasFocus) return;
-    _applyTargetBmiFromInput(_targetBmiController.text);
   }
 
   void _applyHeightFromInput(String rawValue) {
@@ -244,26 +225,6 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     _weightController.text = _formatOneDecimal(_displayWeightForCurrentUnit);
   }
 
-  void _applyTargetBmiFromInput(String rawValue) {
-    final parsedValue = double.tryParse(rawValue.trim());
-    if (parsedValue == null ||
-        parsedValue < _minTargetBmi ||
-        parsedValue > _maxTargetBmi) {
-      setState(() {
-        _targetBmiErrorText =
-            'Enter a value between ${_formatOneDecimal(_minTargetBmi)} and ${_formatOneDecimal(_maxTargetBmi)}';
-      });
-      return;
-    }
-
-    setState(() {
-      _targetBmi = _clampTargetBmi(parsedValue);
-      _targetBmiErrorText = null;
-    });
-    _targetBmiController.text = _formatOneDecimal(_targetBmi);
-    widget.onTargetBmiChanged(_targetBmi);
-  }
-
   BmiEntry _buildCurrentEntry() {
     final result = _result!;
     final now = DateTime.now();
@@ -276,7 +237,8 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
       unitUsed: _unit,
       bmiValue: result.value,
       category: result.category,
-      goalSnapshot: UserGoal(type: GoalType.bmi, value: _targetBmi),
+      goalSnapshot: widget.activeGoal,
+      profileSnapshot: widget.personalProfile,
     );
   }
 
@@ -289,7 +251,7 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('✅ Result saved to history.'),
+        content: Text('Result saved to history.'),
       ),
     );
   }
@@ -300,6 +262,11 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
     final entry = _buildCurrentEntry();
     final shareText = buildBmiShareText(entry: entry);
     await Share.share(shareText);
+  }
+
+  void _openInsights() {
+    if (_result == null) return;
+    Navigator.of(context).push(AppRoutes.insights(entry: _buildCurrentEntry()));
   }
 
   void _setCalculatePressed(bool value) {
@@ -356,15 +323,20 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                 AppRoutes.settings(
                   defaultUnit: _unit,
                   currentThemeMode: widget.currentThemeMode,
+                  currentGoal: widget.activeGoal,
+                  currentProfile: widget.personalProfile,
                   onDefaultUnitChanged: (unit) {
                     widget.onDefaultUnitChanged(unit);
                     if (_unit != unit) {
                       setState(() {
                         _unit = unit;
                       });
+                      _syncInputControllers();
                     }
                   },
                   onThemeModeChanged: widget.onThemeModeChanged,
+                  onGoalChanged: widget.onGoalChanged,
+                  onProfileChanged: widget.onProfileChanged,
                 ),
               );
             },
@@ -609,44 +581,6 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
               errorText: _weightErrorText,
               onSubmitted: _applyWeightFromInput,
             ),
-            const SizedBox(height: 10),
-            Semantics(
-              label: 'Target BMI ${_targetBmi.toStringAsFixed(1)}',
-              child: Text(
-                'Target BMI: ${_targetBmi.toStringAsFixed(1)}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Semantics(
-              label: 'Target BMI slider',
-              value: _targetBmi.toStringAsFixed(1),
-              child: Slider(
-                value: _targetBmi,
-                min: _minTargetBmi,
-                max: _maxTargetBmi,
-                divisions: ((_maxTargetBmi - _minTargetBmi) * 2).round(),
-                onChanged: (v) {
-                  setState(() {
-                    _targetBmi = _clampTargetBmi(v);
-                    _targetBmiErrorText = null;
-                    _targetBmiController.text = _formatOneDecimal(_targetBmi);
-                  });
-                  widget.onTargetBmiChanged(_targetBmi);
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildValueEditor(
-              controller: _targetBmiController,
-              focusNode: _targetBmiFocusNode,
-              label: 'Target BMI input',
-              unit: null,
-              errorText: _targetBmiErrorText,
-              onSubmitted: _applyTargetBmiFromInput,
-            ),
           ],
         ),
       ),
@@ -733,7 +667,8 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
                         result: _result!,
                         heightCm: _heightCm,
                         weightKg: _weightKg,
-                        targetBmi: _targetBmi,
+                        displayUnit: _unit,
+                        activeGoal: widget.activeGoal,
                         colorScheme: colorScheme,
                         textTheme: theme.textTheme,
                       )
@@ -799,6 +734,26 @@ class _BmiHomeScreenState extends State<BmiHomeScreen> {
             label: const Text('Share'),
           ),
         ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _openInsights,
+            style: FilledButton.styleFrom(
+              elevation: 0,
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              minimumSize: const Size.fromHeight(40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(50),
+              ),
+              textStyle: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            icon: const Icon(Icons.insights_outlined),
+            label: const Text('Insights'),
+          ),
+        ),
       ],
     );
   }
@@ -810,7 +765,8 @@ class _StyledResultContent extends StatelessWidget {
     required this.result,
     required this.heightCm,
     required this.weightKg,
-    required this.targetBmi,
+    required this.displayUnit,
+    required this.activeGoal,
     required this.colorScheme,
     required this.textTheme,
   });
@@ -818,39 +774,31 @@ class _StyledResultContent extends StatelessWidget {
   final BmiResult result;
   final double heightCm;
   final double weightKg;
-  final double targetBmi;
+  final MeasurementUnit displayUnit;
+  final UserGoal activeGoal;
   final ColorScheme colorScheme;
   final TextTheme? textTheme;
-
-  /// Target weight in kg for [targetBmi] at [heightCm]. Formula: targetBmi * (heightM)^2.
-  static double _targetWeightKg(double targetBmi, double heightCm) {
-    if (heightCm <= 0) return 0;
-    final heightM = heightCm / 100;
-    return targetBmi * (heightM * heightM);
-  }
-
-  /// Short guidance string: how far current weight is from target weight for the given target BMI.
-  static String _targetGuidance(
-      double weightKg, double heightCm, double targetBmi) {
-    final targetW = _targetWeightKg(targetBmi, heightCm);
-    final diffKg = weightKg - targetW;
-    if (diffKg.abs() < 1) {
-      return 'You\'re at your target weight for BMI ${targetBmi.toStringAsFixed(1)}.';
-    }
-    final absKg = diffKg.abs().toStringAsFixed(1);
-    if (diffKg > 0) {
-      return 'To reach a BMI of ${targetBmi.toStringAsFixed(1)}, aim to lose about $absKg kg.';
-    } else {
-      return 'To reach a BMI of ${targetBmi.toStringAsFixed(1)}, aim to gain about $absKg kg.';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final categoryColor = _categoryColor(colorScheme);
     final description = _descriptionForCategory(result.category);
     final tips = BmiTips.getTipsForCategory(result.category);
-    final targetGuidance = _targetGuidance(weightKg, heightCm, targetBmi);
+    final previewEntry = BmiEntry(
+      id: 'preview',
+      createdAt: DateTime.now(),
+      heightCm: heightCm,
+      weightKg: weightKg,
+      unitUsed: MeasurementUnit.metric,
+      bmiValue: result.value,
+      category: result.category,
+      goalSnapshot: activeGoal,
+    );
+    final healthyRange = HealthyWeightCalculator.forHeightCm(heightCm);
+    final goalProgress = GoalProgressCalculator.fromEntry(entry: previewEntry);
+    final healthyRangeText = healthyRange == null
+        ? null
+        : _healthyRangeText(healthyRange);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -897,6 +845,21 @@ class _StyledResultContent extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
+        if (healthyRange != null) ...[
+          const SizedBox(height: 16),
+          _ResultInfoCard(
+            title: 'Healthy Weight Range',
+            text: '$healthyRangeText for your current height.',
+          ),
+        ],
+        if (goalProgress != null) ...[
+          const SizedBox(height: 12),
+          _ResultInfoCard(
+            title: 'Goal Progress',
+            text:
+                '${goalProgress.summaryText}\n${_secondaryGoalLine(goalProgress)}',
+          ),
+        ],
         if (tips.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(
@@ -939,31 +902,32 @@ class _StyledResultContent extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.flag_outlined, size: 20, color: colorScheme.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  targetGuidance,
-                  style: textTheme?.bodySmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    height: 1.3,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
+  }
+
+  String _secondaryGoalLine(GoalProgress progress) {
+    switch (progress.goalType) {
+      case GoalType.bmi:
+        final targetWeight = displayUnit == MeasurementUnit.metric
+            ? progress.targetWeightKg
+            : UnitConverter.kgToLb(progress.targetWeightKg);
+        final unitLabel = displayUnit == MeasurementUnit.metric ? 'kg' : 'lb';
+        return 'Derived target weight: ${targetWeight.toStringAsFixed(1)} $unitLabel';
+      case GoalType.weight:
+        return 'Derived target BMI: ${progress.targetBmi.toStringAsFixed(1)}';
+    }
+  }
+
+  String _healthyRangeText(HealthyWeightRange healthyRange) {
+    final minWeight = displayUnit == MeasurementUnit.metric
+        ? healthyRange.minWeightKg
+        : UnitConverter.kgToLb(healthyRange.minWeightKg);
+    final maxWeight = displayUnit == MeasurementUnit.metric
+        ? healthyRange.maxWeightKg
+        : UnitConverter.kgToLb(healthyRange.maxWeightKg);
+    final unitLabel = displayUnit == MeasurementUnit.metric ? 'kg' : 'lb';
+    return '${minWeight.toStringAsFixed(1)} $unitLabel - ${maxWeight.toStringAsFixed(1)} $unitLabel';
   }
 
   Color _categoryColor(ColorScheme scheme) {
@@ -992,6 +956,44 @@ class _StyledResultContent extends StatelessWidget {
       case BmiCategory.obese:
         return 'You have a much higher than normal body weight.';
     }
+  }
+}
+
+class _ResultInfoCard extends StatelessWidget {
+  const _ResultInfoCard({
+    required this.title,
+    required this.text,
+  });
+
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            text,
+            style: theme.textTheme.bodySmall?.copyWith(height: 1.35),
+          ),
+        ],
+      ),
+    );
   }
 }
 

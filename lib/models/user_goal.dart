@@ -3,6 +3,17 @@ enum GoalType {
   weight,
 }
 
+extension GoalTypeLabel on GoalType {
+  String get label {
+    switch (this) {
+      case GoalType.bmi:
+        return 'BMI';
+      case GoalType.weight:
+        return 'Weight';
+    }
+  }
+}
+
 class UserGoal {
   const UserGoal({
     required this.type,

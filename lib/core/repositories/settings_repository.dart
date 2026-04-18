@@ -63,6 +63,10 @@ class SettingsRepository {
     return PersonalProfile.fromMap(Map<String, dynamic>.from(decoded));
   }
 
+  Future<void> clearProfile() async {
+    await _prefs.remove(_personalProfileKey);
+  }
+
   Future<void> saveReminderSettings(ReminderSettings settings) async {
     await _prefs.setString(
       _reminderSettingsKey,

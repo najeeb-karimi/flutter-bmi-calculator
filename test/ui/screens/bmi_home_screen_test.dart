@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:bmi_calculator/models/bmi_entry.dart';
 import 'package:bmi_calculator/models/bmi_result.dart';
 import 'package:bmi_calculator/models/measurement_unit.dart';
+import 'package:bmi_calculator/models/user_goal.dart';
 import 'package:bmi_calculator/ui/screens/bmi_home_screen.dart';
 
 void main() {
@@ -17,11 +18,13 @@ void main() {
     return MaterialApp(
       home: BmiHomeScreen(
         defaultUnit: defaultUnit,
-        initialTargetBmi: 22,
+        activeGoal: const UserGoal(type: GoalType.bmi, value: 22),
+        personalProfile: null,
         currentThemeMode: ThemeMode.system,
         onDefaultUnitChanged: (_) {},
         onThemeModeChanged: (_) {},
-        onTargetBmiChanged: (_) {},
+        onGoalChanged: (_) {},
+        onProfileChanged: (_) {},
         onSaveResult: onSaveResult ?? (_) async {},
         onLoadHistory: onLoadHistory ?? () async => const [],
         onDeleteHistoryEntry: onDeleteHistoryEntry ?? (_) async {},
@@ -63,6 +66,7 @@ void main() {
 
     expect(find.text('Save'), findsOneWidget);
     expect(find.text('Share'), findsOneWidget);
+    expect(find.text('Insights'), findsOneWidget);
   });
 
   testWidgets('unit switch updates labels from metric to imperial',
@@ -120,18 +124,26 @@ void main() {
     expect(find.textContaining('Height: 180.0 cm'), findsOneWidget);
   });
 
-  testWidgets('invalid target BMI keeps previous value and shows error',
+  testWidgets('healthy range and goal progress appear after calculation',
       (tester) async {
     await tester.pumpWidget(buildTestApp());
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).at(2), '40');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    final calculateButton = find.text('Calculate BMI');
+    await tester.ensureVisible(calculateButton);
+    await tester.tap(calculateButton);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Enter a value between 18.0 and 28.0'),
-        findsOneWidget);
-    expect(find.textContaining('Target BMI: 22.0'), findsOneWidget);
+    expect(find.text('Healthy Weight Range'), findsOneWidget);
+    expect(find.text('Goal Progress'), findsOneWidget);
+    expect(
+      find.textContaining('Derived target weight:'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('kg'),
+      findsOneWidget,
+    );
   });
 }
 
